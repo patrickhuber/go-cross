@@ -76,6 +76,17 @@ func NewProvider(options ...ProviderOption) Provider {
 		p.os = os.New()
 	}
 
+	// platform specfic parser
+	if platform.IsPosix(p.os.Platform()) {
+		p.parser = NewParser(
+			WithSeparators(ForwardSlash),
+			WithListSeparator(Colon))
+	} else {
+		p.parser = NewParser(
+			WithSeparators(BackwardSlash, ForwardSlash),
+			WithListSeparator(SemiColon))
+	}
+
 	// set the default seperator and comparison operations
 	if platform.IsPosix(p.os.Platform()) {
 		p.separator = ForwardSlash
