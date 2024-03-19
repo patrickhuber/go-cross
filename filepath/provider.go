@@ -5,8 +5,6 @@ import (
 
 	"github.com/patrickhuber/go-cross/os"
 	"github.com/patrickhuber/go-cross/platform"
-	"github.com/patrickhuber/go-types"
-	"github.com/patrickhuber/go-types/option"
 )
 
 type Provider interface {
@@ -29,81 +27,30 @@ type provider struct {
 	parser     Parser
 }
 
-type providerOptions struct {
-	os         types.Option[os.OS]
-	separator  types.Option[PathSeparator]
-	comparison types.Option[Comparison]
-}
-
-type ProviderOption func(p *providerOptions)
-
-func WithOS(os os.OS) ProviderOption {
-	return func(p *providerOptions) {
-		p.os = option.Some(os)
+func NewProvider(o os.OS, parser Parser, separator PathSeparator, cmp Comparison) Provider {
+	return &provider{
+		os:         o,
+		parser:     parser,
+		separator:  separator,
+		comparison: cmp,
 	}
 }
 
-func WithSeparator(sep PathSeparator) ProviderOption {
-	return func(p *providerOptions) {
-		p.separator = option.Some(sep)
+func NewProviderFromOS(o os.OS) Provider {
+	plat := o.Platform()
+	parser := NewParserFromPlatform(plat)
+
+	p := &provider{
+		parser: parser,
+		os:     o,
 	}
-}
-
-func WithComparison(cmp Comparison) ProviderOption {
-	return func(p *providerOptions) {
-		p.comparison = option.Some(cmp)
-	}
-}
-
-func NewProvider(options ...ProviderOption) Provider {
-
-	pop := &providerOptions{
-		os:         option.None[os.OS](),
-		separator:  option.None[PathSeparator](),
-		comparison: option.None[Comparison](),
-	}
-
-	for _, option := range options {
-		option(pop)
-	}
-
-	p := &provider{}
-
-	// is the OS Set? if not use the default
-	if o, ok := pop.os.Deconstruct(); ok {
-		p.os = o
-	} else {
-		p.os = os.New()
-	}
-
-	// platform specfic parser
-	if platform.IsPosix(p.os.Platform()) {
-		p.parser = NewParser(
-			WithSeparators(ForwardSlash),
-			WithListSeparator(Colon))
-	} else {
-		p.parser = NewParser(
-			WithSeparators(BackwardSlash, ForwardSlash),
-			WithListSeparator(SemiColon))
-	}
-
-	// set the default seperator and comparison operations
-	if platform.IsPosix(p.os.Platform()) {
-		p.separator = ForwardSlash
-		p.comparison = CaseSensitive{}
-	} else {
+	if platform.IsWindows(plat) {
+		p.comparison = IgnoreCase
 		p.separator = BackwardSlash
-		p.comparison = IgnoreCase{}
+	} else {
+		p.comparison = CaseSensitive
+		p.separator = ForwardSlash
 	}
-
-	// set overrides
-	if s, ok := pop.separator.Deconstruct(); ok {
-		p.separator = s
-	}
-	if c, ok := pop.comparison.Deconstruct(); ok {
-		p.comparison = c
-	}
-
 	return p
 }
 

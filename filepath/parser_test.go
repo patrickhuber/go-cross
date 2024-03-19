@@ -162,7 +162,7 @@ func TestCanParse(t *testing.T) {
 	run := func(tests []test, name string, plat platform.Platform) {
 		for _, test := range tests {
 			t.Run(name, func(t *testing.T) {
-				parser := filepath.NewParserWithPlatform(plat)
+				parser := filepath.NewParserFromPlatform(plat)
 				actual, err := parser.Parse(test.path)
 				require.NoError(t, err)
 				require.Equal(t, test.fp, actual, "unable to parse path '%s'", test.path)

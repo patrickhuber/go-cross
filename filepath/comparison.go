@@ -8,15 +8,20 @@ type Comparison interface {
 	comparison()
 }
 
-type IgnoreCase struct{}
-type CaseSensitive struct{}
+type comparison string
 
-func (cmp IgnoreCase) comparison() {}
-func (cmp IgnoreCase) Equal(s, t string) bool {
-	return strings.EqualFold(s, t)
-}
+const (
+	IgnoreCase    comparison = "ignore_case"
+	CaseSensitive comparison = "case_sensitive"
+)
 
-func (cmp CaseSensitive) comparison() {}
-func (cmp CaseSensitive) Equal(s, t string) bool {
-	return s == t
+func (cmp comparison) comparison() {}
+func (cmp comparison) Equal(s, t string) bool {
+	switch cmp {
+	case IgnoreCase:
+		return strings.EqualFold(s, t)
+	case CaseSensitive:
+		return s == t
+	}
+	return false
 }

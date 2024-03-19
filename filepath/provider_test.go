@@ -12,45 +12,47 @@ import (
 func TestJoin(t *testing.T) {
 	type test struct {
 		elements []string
-		sep      filepath.PathSeparator
+		platform platform.Platform
 		result   string
 	}
 
 	tests := []test{
 		{
 			[]string{"a", "b", "c"},
-			filepath.ForwardSlash,
+			platform.Linux,
 			"a/b/c",
 		},
 		{
 			[]string{"a", "b/c"},
-			filepath.ForwardSlash,
+			platform.Linux,
 			"a/b/c",
 		},
 		{
 			[]string{"a/b", "c"},
-			filepath.ForwardSlash,
+			platform.Linux,
 			"a/b/c",
 		},
 		{
 			[]string{"a/b", "/c"},
-			filepath.ForwardSlash,
+			platform.Linux,
 			"a/b/c",
 		},
 		{
 			[]string{"/a/b", "/c"},
-			filepath.ForwardSlash,
+			platform.Linux,
 			"/a/b/c",
 		},
 		{
 			[]string{`c:\`, `a\b`, `c`},
-			filepath.BackwardSlash,
+			platform.Windows,
 			`c:\a\b\c`,
 		},
 	}
 
 	for _, test := range tests {
-		provider := filepath.NewProvider(filepath.WithSeparator(test.sep))
+		provider := filepath.NewProviderFromOS(
+			os.NewMemory(
+				os.WithPlatform(test.platform)))
 		actual := provider.Join(test.elements...)
 		require.Equal(t, test.result, actual)
 	}
@@ -58,42 +60,47 @@ func TestJoin(t *testing.T) {
 
 func TestRoot(t *testing.T) {
 	type test struct {
+		name     string
 		path     string
-		sep      filepath.PathSeparator
+		platform platform.Platform
 		expected string
 	}
 
 	tests := []test{
 		{
-			// UNC forward slash
+			"unc_forward_slash",
 			"//host/share/gran/parent/child",
-			filepath.ForwardSlash,
-			"//host/share",
-		},
-		{
-			// UNC backward slash
-			`\\host\share\gran\parent\child`,
-			filepath.BackwardSlash,
+			platform.Windows,
 			`\\host\share`,
 		},
 		{
-			// Unix Path
+			"unc_backward_slash",
+			`\\host\share\gran\parent\child`,
+			platform.Windows,
+			`\\host\share`,
+		},
+		{
+			"unix_path",
 			"/gran/parent/child",
-			filepath.ForwardSlash,
+			platform.Linux,
 			"/",
 		},
 		{
-			// Windows Path
+			"windows_path",
 			`c:\gran\parent\child`,
-			filepath.BackwardSlash,
+			platform.Windows,
 			`c:\`,
 		},
 	}
 
 	for _, test := range tests {
-		provider := filepath.NewProvider(filepath.WithSeparator(test.sep))
-		actual := provider.Root(test.path)
-		require.Equal(t, test.expected, actual)
+		t.Run(test.name, func(t *testing.T) {
+			provider := filepath.NewProviderFromOS(
+				os.NewMemory(
+					os.WithPlatform(test.platform)))
+			actual := provider.Root(test.path)
+			require.Equal(t, test.expected, actual)
+		})
 	}
 }
 
@@ -159,17 +166,20 @@ func TestRel(t *testing.T) {
 	}
 
 	run := func(tests []test, name string, o os.OS) {
-		provider := filepath.NewProvider(filepath.WithOS(o))
-		for i, test := range tests {
 
-			actual, err := provider.Rel(test.source, test.target)
-			if err != nil {
-				actual = "err"
+		t.Run(name, func(t *testing.T) {
+			provider := filepath.NewProviderFromOS(o)
+			for i, test := range tests {
+
+				actual, err := provider.Rel(test.source, test.target)
+				if err != nil {
+					actual = "err"
+				}
+				require.Equal(t, test.expected, actual,
+					"test %s[%d] failed. source '%s' target '%s' expected '%s' actual '%s'",
+					name, i, test.source, test.target, test.expected, actual)
 			}
-			require.Equal(t, test.expected, actual,
-				"test %s[%d] failed. source '%s' target '%s' expected '%s' actual '%s'",
-				name, i, test.source, test.target, test.expected, actual)
-		}
+		})
 	}
 	run(reltests, "reltests", os.NewMemory(os.WithPlatform(platform.Linux)))
 	run(winreltests, "winreltests", os.NewMemory(os.WithPlatform(platform.Windows)))
@@ -276,12 +286,14 @@ func TestClean(t *testing.T) {
 	}
 
 	run := func(tests []test, name string, o os.OS) {
-		provider := filepath.NewProvider(filepath.WithOS(o))
-		for i, test := range tests {
-			actual := provider.Clean(test.path)
-			require.Equal(t, test.expected, actual,
-				"%s test failed: %d given '%s' expected '%s' actual '%s'", name, i, test.path, test.expected, actual)
-		}
+		t.Run(name, func(t *testing.T) {
+			provider := filepath.NewProviderFromOS(o)
+			for i, test := range tests {
+				actual := provider.Clean(test.path)
+				require.Equal(t, test.expected, actual,
+					"%s test failed: %d given '%s' expected '%s' actual '%s'", name, i, test.path, test.expected, actual)
+			}
+		})
 	}
 
 	run(cleantests, "cleantests", os.NewMemory(os.WithPlatform(platform.Linux)))
@@ -328,7 +340,7 @@ func TestDir(t *testing.T) {
 	}
 
 	run := func(tests []test, name string, o os.OS) {
-		provider := filepath.NewProvider(filepath.WithOS(o))
+		provider := filepath.NewProviderFromOS(o)
 		for i, test := range tests {
 			actual := provider.Dir(test.path)
 			require.Equal(t, test.expected, actual,
@@ -355,7 +367,9 @@ func TestExt(t *testing.T) {
 		{"a.dir/", ""},
 	}
 
-	provider := filepath.NewProvider()
+	provider := filepath.NewProviderFromOS(
+		os.NewMemory(
+			os.WithPlatform(platform.Linux)))
 	for _, test := range exttests {
 		actual := provider.Ext(test.path)
 		require.Equal(t, test.ext, actual)
@@ -392,7 +406,7 @@ func TestBase(t *testing.T) {
 		{`\\host\share\a\b`, `b`},
 	}
 	run := func(tests []test, name string, o os.OS) {
-		provider := filepath.NewProvider(filepath.WithOS(o))
+		provider := filepath.NewProviderFromOS(o)
 		for i, test := range tests {
 			actual := provider.Base(test.path)
 			require.Equal(t, test.expected, actual,
@@ -428,7 +442,7 @@ func TestAbs(t *testing.T) {
 			for _, a := range abs {
 				o.ChangeDirectory(a)
 				for _, r := range rel {
-					path := filepath.NewProvider(filepath.WithOS(o))
+					path := filepath.NewProviderFromOS(o)
 					result, err := path.Abs(r)
 					require.NoError(t, err)
 					require.NotEmpty(t, result)

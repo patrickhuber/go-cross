@@ -4,13 +4,15 @@ import (
 	"testing"
 
 	"github.com/patrickhuber/go-cross/filepath"
+	"github.com/patrickhuber/go-cross/os"
+	"github.com/patrickhuber/go-cross/platform"
 	"github.com/stretchr/testify/require"
 )
 
 func TestString(t *testing.T) {
 	type test struct {
 		fp       filepath.FilePath
-		sep      filepath.PathSeparator
+		platform platform.Platform
 		expected string
 	}
 
@@ -25,7 +27,7 @@ func TestString(t *testing.T) {
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      filepath.ForwardSlash,
+			platform: platform.Linux,
 			expected: "//host/share/gran/parent/child",
 		},
 		{
@@ -38,7 +40,7 @@ func TestString(t *testing.T) {
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `\\host\share\gran\parent\child`,
 		},
 		{
@@ -51,7 +53,7 @@ func TestString(t *testing.T) {
 				Segments: []string{},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `\\host\share`,
 		},
 		{
@@ -64,7 +66,7 @@ func TestString(t *testing.T) {
 				Segments: []string{""},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `\\abc\\`,
 		},
 		{
@@ -75,7 +77,7 @@ func TestString(t *testing.T) {
 				},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `\\abc`,
 		},
 		{
@@ -84,7 +86,7 @@ func TestString(t *testing.T) {
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      filepath.ForwardSlash,
+			platform: platform.Linux,
 			expected: "/gran/parent/child",
 		},
 		{
@@ -96,7 +98,7 @@ func TestString(t *testing.T) {
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `c:\gran\parent\child`,
 		},
 		{
@@ -105,7 +107,7 @@ func TestString(t *testing.T) {
 				Segments: []string{"gran", "parent", "child"},
 				Absolute: false,
 			},
-			sep:      filepath.ForwardSlash,
+			platform: platform.Linux,
 			expected: "gran/parent/child",
 		},
 		{
@@ -113,7 +115,7 @@ func TestString(t *testing.T) {
 			fp: filepath.FilePath{
 				Absolute: true,
 			},
-			sep:      filepath.ForwardSlash,
+			platform: platform.Linux,
 			expected: "/",
 		},
 		{
@@ -124,14 +126,13 @@ func TestString(t *testing.T) {
 				},
 				Absolute: true,
 			},
-			sep:      filepath.BackwardSlash,
+			platform: platform.Windows,
 			expected: `c:\`,
 		},
 	}
 
 	for i, test := range tests {
-		provider := filepath.NewProvider(
-			filepath.WithSeparator(test.sep))
+		provider := filepath.NewProviderFromOS(os.NewMemory(os.WithPlatform(test.platform)))
 		actual := test.fp.String(provider.Separator())
 		require.Equal(t, test.expected, actual, "failed test at [%d]", i)
 	}
@@ -141,35 +142,35 @@ func TestVolumeName(t *testing.T) {
 	type test struct {
 		path     string
 		expected string
-		sep      filepath.PathSeparator
+		platform platform.Platform
 	}
 
 	tests := []test{
 		{
 			"//host/share/gran/parent/child",
-			"//host/share",
-			filepath.ForwardSlash,
+			`\\host\share`,
+			platform.Windows,
 		},
 		{
 			`\\host\share\gran\parent\child`,
 			`\\host\share`,
-			filepath.BackwardSlash,
+			platform.Windows,
 		},
 		{
 			"/gran/parent/child",
 			"",
-			filepath.ForwardSlash,
+			platform.Linux,
 		},
 		{
 			// Windows Path
 			`c:\gran\parent\child`,
 			`c:`,
-			filepath.BackwardSlash,
+			platform.Windows,
 		},
 	}
 
 	for _, test := range tests {
-		provider := filepath.NewProvider(filepath.WithSeparator(test.sep))
+		provider := filepath.NewProviderFromOS(os.NewMemory(os.WithPlatform(test.platform)))
 		actual := provider.VolumeName(test.path)
 		require.Equal(t, test.expected, actual)
 	}

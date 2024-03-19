@@ -1,7 +1,6 @@
 package filepath
 
 import (
-	"runtime"
 	"strings"
 	"unicode"
 
@@ -35,64 +34,15 @@ func ifEmptyReturnNil(slice []string) []string {
 }
 
 type parser struct {
-	platform      platform.Platform
-	listSeparator PathListSeparator
-	separators    []PathSeparator
+	detectUNCPaths bool
+	listSeparator  PathListSeparator
+	separators     []PathSeparator
 }
 
 type parserOptions struct {
-	platform      types.Option[platform.Platform]
-	listSeparator types.Option[PathListSeparator]
-	separators    types.Option[[]PathSeparator]
-}
-
-// NewParser creates a parser for the current platform and then applies options
-func NewParser(options ...ParseOption) Parser {
-	// set the default platform
-	return NewParserWithPlatform(platform.Default(), options...)
-}
-
-// NewParserWithPlatform creates a new parser with the specified platform defaults and then applies options
-func NewParserWithPlatform(plat platform.Platform, options ...ParseOption) Parser {
-	pop := &parserOptions{
-		platform:      option.None[platform.Platform](),
-		listSeparator: option.None[PathListSeparator](),
-		separators:    option.None[[]PathSeparator](),
-	}
-	for _, option := range options {
-		option(pop)
-	}
-	p := &parser{}
-
-	// set the platform or the default
-	if plat, ok := pop.platform.Deconstruct(); ok {
-		p.platform = plat
-	} else {
-		p.platform = platform.Parse(runtime.GOOS)
-	}
-
-	// if the list seperator is set use it otherwise the default
-	if listSeparator, ok := pop.listSeparator.Deconstruct(); ok {
-		p.listSeparator = listSeparator
-	} else {
-		if platform.IsPosix(plat) {
-			p.listSeparator = Colon
-		} else {
-			p.listSeparator = SemiColon
-		}
-	}
-
-	// if the seperator is set use it, otherwise use the platform default
-	if separators, ok := pop.separators.Deconstruct(); ok {
-		p.separators = separators
-	} else {
-		if platform.IsPosix(plat) {
-			p.separators = []PathSeparator{ForwardSlash}
-		} else {
-			p.separators = []PathSeparator{BackwardSlash, ForwardSlash}
-		}
-	}
-	return p
+	listSeparator  types.Option[PathListSeparator]
+	separators     types.Option[[]PathSeparator]
+	detectUNCPaths types.Option[bool]
 }
 
 func WithListSeparator(sep PathListSeparator) ParseOption {
@@ -105,6 +55,28 @@ func WithSeparators(sep ...PathSeparator) ParseOption {
 	return func(p *parserOptions) {
 		p.separators = option.Some(sep)
 	}
+}
+
+func WithUNCPathDetection(enabled bool) ParseOption {
+	return func(p *parserOptions) {
+		p.detectUNCPaths = option.Some(enabled)
+	}
+}
+
+// NewParser creates a parser for the current platform and then applies options
+func NewParser(pathListSeparator PathListSeparator, pathSeparators []PathSeparator, enableUNCPathDetection bool) Parser {
+	return &parser{
+		detectUNCPaths: enableUNCPathDetection,
+		listSeparator:  pathListSeparator,
+		separators:     pathSeparators,
+	}
+}
+
+func NewParserFromPlatform(plat platform.Platform) Parser {
+	if platform.IsWindows(plat) {
+		return NewParser(SemiColon, []PathSeparator{ForwardSlash, BackwardSlash}, true)
+	}
+	return NewParser(Colon, []PathSeparator{ForwardSlash}, false)
 }
 
 func (p *parser) Separators() []PathSeparator {
@@ -231,7 +203,7 @@ func (p *parser) isUNCPath(path string) bool {
 	if len(path) <= 2 {
 		return false
 	}
-	if p.platform != platform.Windows {
+	if !p.detectUNCPaths {
 		return false
 	}
 	return p.isSeparator(path[0]) && p.isSeparator(path[1])

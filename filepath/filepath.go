@@ -346,23 +346,23 @@ func (fp FilePath) Equal(other FilePath, cmp Comparison) bool {
 
 // Equal compares two volumes using case sensetive comparison
 func (v Volume) Equal(other Volume, cmp Comparison) bool {
-	if !nullableStringEqual(v.Drive, other.Drive) {
+	if !nullableStringEqual(v.Drive, other.Drive, cmp) {
 		return false
 	}
-	if !nullableStringEqual(v.Host, other.Host) {
+	if !nullableStringEqual(v.Host, other.Host, cmp) {
 		return false
 	}
-	return nullableStringEqual(v.Share, other.Share)
+	return nullableStringEqual(v.Share, other.Share, cmp)
 }
 
-func nullableStringEqual(first Nullable[string], second Nullable[string]) bool {
+func nullableStringEqual(first Nullable[string], second Nullable[string], cmp Comparison) bool {
 	if !first.HasValue && !second.HasValue {
 		return true
 	}
 	if first.HasValue != second.HasValue {
 		return false
 	}
-	return strings.Compare(first.Value, second.Value) == 0
+	return cmp.Equal(first.Value, second.Value)
 }
 
 func push[T any](list []T, item T) []T {
