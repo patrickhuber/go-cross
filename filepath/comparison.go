@@ -4,7 +4,9 @@ import "strings"
 
 // Comparison operation determines how paths are compared. IgnoreCase or CaseSensitive
 type Comparison interface {
+	// Equal checks if the two strings are equal
 	Equal(first, second string) bool
+	// comparison implements the comparison interface
 	comparison()
 }
 
@@ -16,6 +18,7 @@ const (
 )
 
 func (cmp comparison) comparison() {}
+
 func (cmp comparison) Equal(s, t string) bool {
 	switch cmp {
 	case IgnoreCase:

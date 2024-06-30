@@ -2,6 +2,7 @@ package filepath
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/patrickhuber/go-cross/os"
 	"github.com/patrickhuber/go-cross/platform"
@@ -9,6 +10,7 @@ import (
 
 type Provider interface {
 	Separator() PathSeparator
+	Comparison() Comparison
 	VolumeName(path string) string
 	Abs(path string) (string, error)
 	Join(elements ...string) string
@@ -18,6 +20,9 @@ type Provider interface {
 	Dir(path string) string
 	Ext(path string) string
 	Base(path string) string
+	Normalize(path string) (string, error)
+	Parse(path string) (FilePath, error)
+	String(fp FilePath) string
 }
 
 type provider struct {
@@ -191,4 +196,24 @@ func (p *provider) String(fp FilePath) string {
 
 func (p *provider) Separator() PathSeparator {
 	return p.separator
+}
+
+func (p *provider) Comparison() Comparison {
+	return p.comparison
+}
+
+func (p *provider) Normalize(path string) (string, error) {
+	fp, err := p.parser.Parse(path)
+	if err != nil {
+		return "", err
+	}
+	path = fp.String(p.separator)
+	if p.comparison == IgnoreCase {
+		return strings.ToLower(path), nil
+	}
+	return path, nil
+}
+
+func (p *provider) Parse(path string) (FilePath, error) {
+	return p.parser.Parse(path)
 }
