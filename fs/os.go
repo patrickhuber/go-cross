@@ -9,7 +9,7 @@ import (
 type osfs struct {
 }
 
-func NewOS() FS {
+func New() FS {
 	return &osfs{}
 }
 

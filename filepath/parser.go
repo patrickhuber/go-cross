@@ -64,19 +64,35 @@ func WithUNCPathDetection(enabled bool) ParseOption {
 }
 
 // NewParser creates a parser for the current platform and then applies options
-func NewParser(pathListSeparator PathListSeparator, pathSeparators []PathSeparator, enableUNCPathDetection bool) Parser {
+func NewParser(options ...ParseOption) Parser {
+	p := &parserOptions{
+		listSeparator:  option.None[PathListSeparator](),
+		separators:     option.None[[]PathSeparator](),
+		detectUNCPaths: option.None[bool](),
+	}
+	for _, option := range options {
+		option(p)
+	}
 	return &parser{
-		detectUNCPaths: enableUNCPathDetection,
-		listSeparator:  pathListSeparator,
-		separators:     pathSeparators,
+		detectUNCPaths: p.detectUNCPaths.UnwrapOr(false),
+		listSeparator:  p.listSeparator.UnwrapOr(DefaultPathListSeparator),
+		separators:     p.separators.UnwrapOr([]PathSeparator{DefaultPathSeparator}),
 	}
 }
 
 func NewParserFromPlatform(plat platform.Platform) Parser {
 	if platform.IsWindows(plat) {
-		return NewParser(SemiColon, []PathSeparator{ForwardSlash, BackwardSlash}, true)
+		return NewParser(
+			WithUNCPathDetection(true),
+			WithListSeparator(SemiColon),
+			WithSeparators(ForwardSlash, BackwardSlash),
+		)
 	}
-	return NewParser(Colon, []PathSeparator{ForwardSlash}, false)
+	return NewParser(
+		WithUNCPathDetection(false),
+		WithListSeparator(Colon),
+		WithSeparators(ForwardSlash),
+	)
 }
 
 func (p *parser) Separators() []PathSeparator {
