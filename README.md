@@ -5,7 +5,19 @@ A go cross platform library with abstractions for standard lib global functions.
 ## using
 
 ```bash
-go get github.com/patrickhuber/go-crosos
+go get github.com/patrickhuber/go-cross
+```
+
+### target
+
+```go
+import(
+  "github.com/patrickhuber/go-cross"
+)
+func main(){
+  t := cross.New()
+  fmt.Println(t.Console().Executable())
+}
 ```
 
 ### os
@@ -16,7 +28,11 @@ import(
 )
 func main(){
   o := os.New()
-  fmt.Println(o.Executable())
+  wd, err := o.WorkingDirectory()
+  if err != nil{
+    fmt.Errorf("%w", err)
+  }
+  fmt.Println(wd)
 }
 ```
 

@@ -28,10 +28,6 @@ func (o *realOS) WorkingDirectory() (string, error) {
 	return os.Getwd()
 }
 
-func (o *realOS) Executable() (string, error) {
-	return os.Executable()
-}
-
 func (o *realOS) Platform() platform.Platform {
 	return platform.Parse(runtime.GOOS)
 }

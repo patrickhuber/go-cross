@@ -1,5 +1,7 @@
 package arch
 
+import "runtime"
+
 type Arch interface {
 	arch()
 	String() string
@@ -76,4 +78,8 @@ func Parse(s string) Arch {
 		return Unknown
 	}
 	return a
+}
+
+func Default() Arch {
+	return Parse(runtime.GOARCH)
 }

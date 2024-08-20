@@ -6,9 +6,9 @@ import (
 )
 
 const (
-	MockWindowsExecutable = "c:\\ProgramData\\test\\fake.exe"
-	MockLinuxExecutable   = "/opt/test/fake"
-	MockDarwinExecutable  = MockLinuxExecutable
+	FakeWindowsExecutable = "c:\\ProgramData\\test\\fake.exe"
+	FakeLinuxExecutable   = "/opt/test/fake"
+	FakeDarwinExecutable  = FakeLinuxExecutable
 )
 
 type memory struct {
@@ -27,6 +27,10 @@ type Memory interface {
 	ErrBuffer() *bytes.Buffer
 	// InBuffer exposes the error buffer for the memory console to enable testing
 	InBuffer() *bytes.Buffer
+	// SetExecutable sets the executable path
+	SetExecutable(executable string)
+	// SetArgs sets the args
+	SetArgs(args []string)
 }
 
 type MemoryOption func(*memory)
@@ -90,4 +94,12 @@ func (c *memory) Args() []string {
 
 func (c *memory) Executable() (string, error) {
 	return c.executable, nil
+}
+
+func (c *memory) SetExecutable(executable string) {
+	c.executable = executable
+}
+
+func (c *memory) SetArgs(args []string) {
+	c.args = args
 }
