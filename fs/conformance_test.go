@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	iofs "io/fs"
 	"strings"
 	"testing"
 
@@ -219,4 +220,34 @@ func (c *conformance) TestOpenFileFailsWhenNotExists(t *testing.T, folder string
 
 	_, err = c.fs.OpenFile(file, os.O_RDONLY, 0666)
 	require.NotNil(t, err)
+}
+
+func (c *conformance) TestCanChangePermission(t *testing.T, filePath string) {
+	dir := c.path.Dir(filePath)
+	err := c.fs.MkdirAll(dir, 0775)
+	require.NoError(t, err)
+
+	err = c.fs.WriteFile(filePath, []byte{}, 0111)
+	require.NoError(t, err)
+
+	f, err := c.fs.Open(filePath)
+	require.NoError(t, err)
+	defer f.Close()
+
+	info, err := f.Stat()
+	require.NoError(t, err)
+	require.Equal(t, iofs.FileMode(0111), info.Mode())
+	require.NoError(t, f.Close())
+
+	err = c.fs.Chmod(filePath, 0711)
+	require.NoError(t, err)
+
+	f, err = c.fs.Open(filePath)
+	require.NoError(t, err)
+	defer f.Close()
+
+	info, err = f.Stat()
+	require.NoError(t, err)
+	require.Equal(t, iofs.FileMode(0711), info.Mode())
+	require.NoError(t, f.Close())
 }

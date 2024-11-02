@@ -48,6 +48,10 @@ func (m *memory) Create(name string) (File, error) {
 
 // Open implements FS
 func (m *memory) Open(name string) (fs.File, error) {
+	return m.open(name)
+}
+
+func (m *memory) open(name string) (*openFile, error) {
 	op := "open"
 	original := name
 	name, err := m.path.Normalize(name)
@@ -381,4 +385,14 @@ func (m *memory) MkdirAll(path string, perm fs.FileMode) error {
 
 func errNotExist(path string) error {
 	return fmt.Errorf("'%s' %w", path, fs.ErrNotExist)
+}
+
+func (m *memory) Chmod(name string, mode fs.FileMode) error {
+	f, err := m.open(name)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	f.file.Mode = mode
+	return nil
 }

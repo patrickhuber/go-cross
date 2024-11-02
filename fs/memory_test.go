@@ -117,6 +117,11 @@ func TestWindowsFileExists(t *testing.T) {
 		TestWindowsFileForwardAndBackwardSlash(t, "c:/ProgramData/fake/folder/test.txt")
 }
 
+func TestCanChmod(t *testing.T) {
+	newConformance(platform.Windows).
+		TestCanChangePermission(t, "/opt/fake/folder/test.txt")
+}
+
 func newMemory(o os.OS) (fs.FS, filepath.Provider) {
 	path := filepath.NewProviderFromOS(o)
 	fs := fs.NewMemory(path)

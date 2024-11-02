@@ -10,7 +10,7 @@ type OpenFileFS interface {
 
 type RenameFS interface {
 	iofs.FS
-	Rename(oldPath, newPath string) error
+	Rename(oldName, newName string) error
 }
 
 type RemoveFS interface {
@@ -24,16 +24,20 @@ type WriteFileFS interface {
 }
 
 type ExistsFS interface {
-	Exists(path string) (bool, error)
+	Exists(name string) (bool, error)
 }
 
 type MakeDirFS interface {
-	Mkdir(path string, perm iofs.FileMode) error
-	MkdirAll(path string, perm iofs.FileMode) error
+	Mkdir(name string, perm iofs.FileMode) error
+	MkdirAll(name string, perm iofs.FileMode) error
 }
 
 type CreateFS interface {
-	Create(path string) (File, error)
+	Create(name string) (File, error)
+}
+
+type ChmodFS interface {
+	Chmod(name string, mode iofs.FileMode) error
 }
 
 type FS interface {
@@ -51,4 +55,5 @@ type FS interface {
 	iofs.SubFS
 	iofs.ReadDirFS
 	MakeDirFS
+	ChmodFS
 }

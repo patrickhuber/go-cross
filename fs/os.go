@@ -95,3 +95,8 @@ func (o *osfs) Mkdir(path string, perm iofs.FileMode) error {
 func (o *osfs) MkdirAll(path string, perm iofs.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
+
+// Chmod implements ChmodFS
+func (o *osfs) Chmod(name string, perm iofs.FileMode) error {
+	return os.Chmod(name, perm)
+}
