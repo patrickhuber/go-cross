@@ -13,6 +13,7 @@ import (
 type Target interface {
 	Platform() platform.Platform
 	Architecture() arch.Arch
+	OS() os.OS
 	Path() filepath.Provider
 	Env() env.Environment
 	FS() fs.FS
