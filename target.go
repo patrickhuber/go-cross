@@ -23,13 +23,21 @@ type Target interface {
 func NewTest(p platform.Platform, a arch.Arch, args ...string) Target {
 	os := os.NewMemory(os.WithPlatform(p))
 	path := filepath.NewProviderFromOS(os)
+	fs := fs.NewMemory(path)
+
+	wd, _ := os.WorkingDirectory()
+	_ = fs.MkdirAll(wd, 0755)
+
+	home := os.Home()
+	_ = fs.MkdirAll(home, 0755)
+
 	return &target{
 		os:           os,
 		platform:     p,
 		architecture: a,
 		path:         path,
 		env:          env.NewMemory(),
-		fileSystem:   fs.NewMemory(path),
+		fileSystem:   fs,
 		console:      console.NewMemory(console.WithArgs(args)),
 	}
 }
