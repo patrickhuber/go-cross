@@ -90,8 +90,8 @@ func (o *memory) Architecture() arch.Arch {
 	return o.architecture
 }
 
-func (o *memory) Home() string {
-	return o.homeDirectory
+func (o *memory) Home() (string, error) {
+	return o.homeDirectory, nil
 }
 
 func (o *memory) ChangeDirectory(dir string) error {

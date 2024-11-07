@@ -14,7 +14,7 @@ type OS interface {
 	ChangeDirectory(dir string) error
 	Platform() platform.Platform
 	Architecture() arch.Arch
-	Home() string
+	Home() (string, error)
 }
 
 type realOS struct {
@@ -36,9 +36,8 @@ func (o *realOS) Architecture() arch.Arch {
 	return arch.Parse(runtime.GOARCH)
 }
 
-func (o *realOS) Home() string {
-	dir, _ := os.UserHomeDir()
-	return dir
+func (o *realOS) Home() (string, error) {
+	return os.UserHomeDir()
 }
 
 func (o *realOS) ChangeDirectory(dir string) error {

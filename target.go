@@ -28,7 +28,7 @@ func NewTest(p platform.Platform, a arch.Arch, args ...string) Target {
 	wd, _ := os.WorkingDirectory()
 	_ = fs.MkdirAll(wd, 0755)
 
-	home := os.Home()
+	home, _ := os.Home()
 	_ = fs.MkdirAll(home, 0755)
 
 	return &target{

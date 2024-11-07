@@ -106,7 +106,9 @@ func TestHome(t *testing.T) {
 		{expected: OtherHome, o: os.NewMemory(os.WithHomeDirectory(OtherHome))},
 	}
 	for i, test := range tests {
-		require.Equal(t, test.expected, test.o.Home(), "test [%d] failed", i)
+		home, err := test.o.Home()
+		require.NoError(t, err)
+		require.Equal(t, test.expected, home, "test [%d] failed", i)
 	}
 }
 
